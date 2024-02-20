@@ -1,0 +1,7 @@
+Neos:
+  Flow:
+    http:
+      middlewares:
+        'Flownative.AuthenticationMiddleware:authenticateTokens':
+          position: 'after securityEntryPoint'
+          middleware: 'Flownative\AuthenticationMiddleware\AuthenticateTokens'
