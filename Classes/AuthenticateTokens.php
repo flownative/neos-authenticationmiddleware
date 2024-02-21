@@ -5,6 +5,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Security\Authentication\AuthenticationManagerInterface;
 use Neos\Flow\Security\Authentication\TokenInterface;
 use Neos\Flow\Security\Context;
+use Neos\Flow\Security\Exception\AuthenticationRequiredException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -32,9 +33,14 @@ class AuthenticateTokens implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $tokensReadyForAuthentication = array_filter($this->securityContext->getAuthenticationTokens(), fn($token) => $token->getAuthenticationStatus() === TokenInterface::AUTHENTICATION_NEEDED);
-        if (!empty($tokensReadyForAuthentication)) {
+        /**
+         * Silently trigger authentication for any token that can just be authenticated (e.g. valid JWTs)
+         * This ensures we have role and account information available without explicitly asking for authentication everywhere.
+         * For example EntityPrivileges currently never authenticate but rely on other code doing the authenticate call.
+         */
+        try {
             $this->authenticationProviderManager->authenticate();
+        } catch (AuthenticationRequiredException $exception) {
         }
         return $handler->handle($request);
     }
